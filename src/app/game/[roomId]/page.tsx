@@ -22,9 +22,10 @@ import {
 import { FOOTBALLERS, Footballer, getRandomFootballer, getRandomRarity, RARITIES } from "@/lib/footballer-data";
 import { ALL_EMOTES, DEFAULT_EQUIPPED_IDS, UNLOCKED_EMOTE_IDS } from "@/lib/emote-data";
 import { validateAnswer } from "@/ai/flows/validate-answer-flow";
+import { useSoundEffect } from "@/hooks/useSoundEffect";
 
 type GameState = 'countdown' | 'playing' | 'finalizing' | 'reveal' | 'result';
-type RevealStep = 'none' | 'country' | 'position' | 'rarity' | 'full-card';
+type RevealStep = 'none' | 'flag-in' | 'flag-out' | 'position-in' | 'position-out' | 'club-in' | 'club-out' | 'white-flash' | 'card-in';
 
 const REVEAL_CARD_IMG = "https://res.cloudinary.com/speed-searches/image/upload/v1772119870/photo_2026-02-26_20-32-22_cutwwy.jpg";
 
@@ -35,6 +36,7 @@ export default function GamePage() {
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const db = useFirestore();
+  const { playSound } = useSoundEffect();
   
   const revealTriggered = useRef(false);
   const isInitializingRound = useRef(false);
@@ -103,8 +105,9 @@ export default function GamePage() {
       await updateDoc(uRef, { unlockedEmoteIds: arrayUnion(emoteId) });
       const emote = ALL_EMOTES.find(e => e.id === emoteId);
       setCompletedQuest({ title: questTitle, emote });
+      playSound('success');
     } catch (e) {}
-  }, [user, profile, db]);
+  }, [user, profile, db, playSound]);
 
   useEffect(() => {
     if (gameState === 'result' || gameState === 'reveal' || gameState === 'finalizing') {
@@ -133,6 +136,9 @@ export default function GamePage() {
         if (filtered.length === 0) return prev;
         
         filtered.forEach(emote => {
+          if (emote.senderId !== user?.uid) {
+            playSound('pop');
+          }
           setTimeout(() => {
             setActiveEmotes(current => current.filter(item => item.id !== emote.id));
           }, 6000);
@@ -141,7 +147,7 @@ export default function GamePage() {
         return [...prev, ...filtered];
       });
     }
-  }, [recentEmotes, gameState, participantProfiles]);
+  }, [recentEmotes, gameState, participantProfiles, user, playSound]);
 
   useEffect(() => {
     let timerId: NodeJS.Timeout;
@@ -274,21 +280,33 @@ export default function GamePage() {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (gameState === 'countdown' && countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      timer = setTimeout(() => {
+        playSound('pop');
+        setCountdown(countdown - 1)
+      }, 1000);
     } else if (gameState === 'countdown' && countdown === 0) {
+      playSound('success');
       setGameState('playing');
     }
     
     if (gameState === 'playing' && targetPlayer && visibleHints < targetPlayer.hints.length) {
       const isParty = room?.mode === 'Party';
       const interval = isParty ? 2000 : 5000;
-      timer = setTimeout(() => setVisibleHints(prev => prev + 1), interval);
+      timer = setTimeout(() => {
+        playSound('pop');
+        setVisibleHints(prev => prev + 1);
+      }, interval);
     }
     return () => clearTimeout(timer);
-  }, [gameState, countdown, visibleHints, targetPlayer, room?.mode]);
+  }, [gameState, countdown, visibleHints, targetPlayer, room?.mode, playSound]);
 
   useEffect(() => {
     if (gameState === 'result' && autoNextRoundCountdown === null) {
+      // Play sound based on result
+      const myGuess = roundData?.guesses?.[user?.uid || ""];
+      if (myGuess?.isCorrect) playSound('success');
+      else playSound('error');
+
       setAutoNextRoundCountdown(5);
     }
 
@@ -299,11 +317,12 @@ export default function GamePage() {
       handleNextRound();
     }
     return () => clearTimeout(timer);
-  }, [gameState, autoNextRoundCountdown]);
+  }, [gameState, autoNextRoundCountdown, roundData, user, playSound]);
 
   const handleGuess = async () => {
     if (!guessInput.trim() || !roundRef || !roundData || gameState !== 'playing' || revealTriggered.current || isGuessing || !user) return;
     
+    playSound('submit');
     setIsGuessing(true);
     let isCorrect = false;
     
@@ -332,6 +351,7 @@ export default function GamePage() {
 
   const handleSkip = async () => {
     if (!roundRef || gameState !== 'playing' || revealTriggered.current || !user) return;
+    playSound('submit');
     const now = new Date().toISOString();
     const update: any = { [`guesses.${user.uid}`]: { text: "SKIPPED", isCorrect: false, guessedAt: now } };
     
@@ -367,13 +387,14 @@ export default function GamePage() {
     }
     
     const steps = [
-      { s: 'country', t: 2200 },
-      { s: 'none', t: 3100 },
-      { s: 'position', t: 3800 },
-      { s: 'none', t: 4700 },
-      { s: 'rarity', t: 5200 },
-      { s: 'none', t: 6100 },
-      { s: 'full-card', t: 6900 }
+      { s: 'flag-in', t: 1800 },
+      { s: 'flag-out', t: 2600 },
+      { s: 'position-in', t: 3300 },
+      { s: 'position-out', t: 4100 },
+      { s: 'club-in', t: 4600 },
+      { s: 'club-out', t: 5400 },
+      { s: 'white-flash', t: 7000 },
+      { s: 'card-in', t: 7600 }
     ];
 
     steps.forEach(step => {
@@ -384,7 +405,7 @@ export default function GamePage() {
     const finalT = setTimeout(() => {
       setGameState('result');
       calculateRoundResults(); 
-    }, 9500); 
+    }, 10000); 
     revealTimeouts.current.push(finalT);
   };
 
@@ -571,27 +592,82 @@ export default function GamePage() {
 
   if (gameState === 'reveal') {
     return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center overflow-hidden">
-        <video className="absolute inset-0 w-full h-full object-cover opacity-60" playsInline autoPlay src="https://res.cloudinary.com/speed-searches/video/upload/v1772079954/round_xxbuaq.mp4" />
+      <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col items-center justify-center overflow-hidden font-sans">
+        {/* Dynamic Backgrounds */}
+        <video className="absolute inset-0 w-full h-full object-cover opacity-70 hidden md:block" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
+        <video className="absolute inset-0 w-full h-full object-cover opacity-70 md:hidden" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384026/Untitled_Youtube_Shorts_uttq1h.mp4" />
+        
         <div className="relative z-20 flex flex-col items-center justify-center w-full h-full p-6 text-center">
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {revealStep === 'country' && targetPlayer && <div className="animate-in fade-in zoom-in duration-300"><img src={getFlagUrl(targetPlayer.countryCode)} className="w-48 md:w-80 filter drop-shadow-[0_0_60px_rgba(255,255,255,0.9)]" alt="flag" /></div>}
-            {revealStep === 'position' && targetPlayer && <div className="animate-in fade-in slide-in-from-bottom-20 duration-300"><span className="text-[100px] md:text-[180px] font-black text-white drop-shadow-[0_0_100px_rgba(255,165,0,1)] uppercase">{targetPlayer.position}</span></div>}
-            {revealStep === 'rarity' && currentRarity && <div className="animate-in fade-in zoom-in duration-400"><Badge className={`bg-gradient-to-r ${currentRarity.bg} text-white text-3xl md:text-5xl px-8 md:px-16 py-3 md:py-6 font-black border-4 border-white/50 uppercase tracking-widest`}>{currentRarity.type}</Badge></div>}
-          </div>
-          {revealStep === 'full-card' && currentRarity && targetPlayer && (
-            <div className="relative fc-card-container">
-              <div className={`w-72 h-[480px] md:w-96 md:h-[600px] fc-animation-reveal rounded-[2rem] shadow-[0_0_100px_rgba(0,0,0,0.9)] flex flex-col border-[10px] md:border-[14px] overflow-hidden relative bg-gradient-to-br ${currentRarity.bg} border-white/20`}>
-                <img src={REVEAL_CARD_IMG} className="absolute inset-0 w-full h-full object-cover opacity-80" alt="background" />
-                <div className="mt-auto relative z-20 p-4">
-                  <div className="bg-black/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-2xl flex flex-col items-center text-center">
-                    <h3 className="text-3xl md:text-4xl font-black uppercase text-white leading-none mb-4">{targetPlayer.name}</h3>
-                    <img src={getFlagUrl(targetPlayer.countryCode)} className="w-16 md:w-24 shadow-2xl rounded-sm border border-white/20" alt="flag" />
+          
+          {/* White Flash Effect */}
+          <div className={`absolute inset-0 bg-white pointer-events-none transition-opacity duration-500 ease-in-out ${revealStep === 'white-flash' ? 'opacity-100' : 'opacity-0'}`} />
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none w-full h-full p-4">
+            
+            {/* Flag */}
+            <div className={`absolute transition-all duration-300 ease-in-out transform ${
+              revealStep === 'flag-in' ? 'opacity-100 scale-100 blur-none' :
+              revealStep === 'flag-out' ? 'opacity-0 scale-110 blur-sm' :
+              'opacity-0 scale-90 blur-sm'
+            }`}>
+              {targetPlayer && <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[80vw] max-w-[400px] shadow-[0_0_80px_rgba(255,255,255,1)]" alt="flag" />}
+            </div>
+
+            {/* Position */}
+            <div className={`absolute transition-all duration-300 ease-in-out flex flex-col items-center justify-center ${
+              revealStep === 'position-in' ? 'opacity-100 scale-100 blur-none' :
+              revealStep === 'position-out' ? 'opacity-0 scale-110 blur-sm' :
+              'opacity-0 scale-90 blur-sm'
+            }`}>
+              {targetPlayer && <span className="text-[140px] md:text-[220px] font-black italic uppercase text-yellow-400 drop-shadow-[0_0_100px_rgba(255,165,0,0.8)] tracking-tighter leading-none">{targetPlayer.position}</span>}
+            </div>
+
+            {/* Club */}
+            <div className={`absolute transition-all duration-300 ease-in-out flex flex-col items-center justify-center ${
+              revealStep === 'club-in' ? 'opacity-100 scale-100 blur-none' :
+              revealStep === 'club-out' ? 'opacity-0 scale-110 blur-sm' :
+              'opacity-0 scale-90 blur-sm'
+            }`}>
+              {targetPlayer && (
+                <>
+                  <div className="w-[50vw] max-w-[240px] aspect-square rounded-full border-[6px] border-black/50 bg-white/10 shadow-[0_0_80px_rgba(255,255,255,0.4)] flex flex-col items-center justify-center overflow-hidden mb-6 p-1 backdrop-blur-sm">
+                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(targetPlayer.club)}&background=random&color=fff&size=256&bold=true`} className="w-full h-full rounded-full object-contain filter drop-shadow-lg" alt="club" />
                   </div>
+                  <span className="text-[40px] md:text-[60px] font-black italic uppercase text-white drop-shadow-[0_0_30px_rgba(0,0,0,0.8)] tracking-tight max-w-[90vw] text-center leading-none">{targetPlayer.club}</span>
+                </>
+              )}
+            </div>
+
+          </div>
+          
+          {/* Final Card */}
+          {revealStep === 'card-in' && currentRarity && targetPlayer && (
+            <div className="relative z-50 animate-in fade-in zoom-in slide-in-from-bottom-20 duration-500 ease-out">
+              <div className={`w-[320px] h-[480px] md:w-[400px] md:h-[600px] rounded-3xl shadow-[0_0_120px_rgba(0,0,0,0.9)] flex flex-col border-[4px] md:border-[6px] overflow-hidden relative bg-gradient-to-br ${currentRarity.bg} border-yellow-400/60`}>
+                <img src={REVEAL_CARD_IMG} className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-overlay" alt="background" />
+                
+                <div className="mt-auto relative z-20 pb-8 px-6 pt-24 flex flex-col h-full justify-end bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+                  
+                  <div className="flex justify-between items-end mb-6">
+                    <div className="flex flex-col gap-4">
+                      <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[64px] md:w-[76px] shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/20" alt="flag" />
+                      <div className="w-[64px] h-[64px] md:w-[76px] md:h-[76px] rounded-full border border-white/20 bg-black/60 overflow-hidden flex items-center justify-center p-[2px] shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(targetPlayer.club)}&background=random&color=fff&size=128&bold=true`} className="w-full h-full rounded-full object-contain filter drop-shadow-md" alt="club" />
+                      </div>
+                    </div>
+                    <span className="text-[100px] md:text-[120px] font-black italic text-yellow-400 drop-shadow-[0_0_50px_rgba(0,0,0,0.8)] leading-[0.8] tracking-tighter">{targetPlayer.position}</span>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-transparent via-black/80 to-transparent py-4 border-y border-white/20 flex justify-center text-center w-[120%] -ml-[10%]">
+                    <span className="text-[32px] md:text-[44px] font-black uppercase italic text-white leading-[0.9] tracking-tight">{targetPlayer.name}</span>
+                  </div>
+
                 </div>
+
               </div>
             </div>
           )}
+
         </div>
       </div>
     );
