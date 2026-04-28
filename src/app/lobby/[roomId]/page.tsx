@@ -32,6 +32,7 @@ export default function LobbyPage() {
   const { data: room, isLoading } = useDoc(roomRef);
 
   const [participants, setParticipants] = useState<any[]>([]);
+  const [isStartingMatch, setIsStartingMatch] = useState(false);
   const isLeader = room?.creatorId === user?.uid;
 
   useEffect(() => {
@@ -108,7 +109,11 @@ export default function LobbyPage() {
     });
 
     if (room.status === 'InProgress') {
-      router.push(`/game/${roomIdStr}`);
+      setIsStartingMatch(true);
+      const timer = setTimeout(() => {
+        router.push(`/game/${roomIdStr}`);
+      }, 3000);
+      return () => clearTimeout(timer);
     }
 
     return () => unsubs.forEach(u => u());
@@ -170,6 +175,24 @@ export default function LobbyPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0b]">
         <Swords className="w-12 h-12 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (isStartingMatch) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center relative overflow-hidden">
+        <video className="absolute inset-0 w-full h-full object-cover opacity-30" playsInline autoPlay muted loop src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
+        <div className="relative z-10 flex flex-col items-center justify-center space-y-8 animate-in fade-in zoom-in duration-1000">
+          <div className="relative">
+            <Swords className="w-32 h-32 text-primary animate-bounce drop-shadow-[0_0_30px_rgba(249,115,22,0.8)]" />
+            <div className="absolute inset-0 animate-ping opacity-50 rounded-full border border-primary/50"></div>
+          </div>
+          <div className="text-center space-y-2">
+            <h1 className="text-6xl font-black uppercase italic text-white tracking-tighter drop-shadow-2xl">IT'S TIME</h1>
+            <p className="text-sm font-black text-primary uppercase tracking-[0.3em] animate-pulse">PREPARING ARENA...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -252,7 +275,7 @@ export default function LobbyPage() {
                   )}
                 </div>
 
-                {!isPartyMode && (
+                {(room.mode === undefined || room.mode === '1v1') && (
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                       <Heart className="w-3 h-3 text-red-500" /> MATCH HEALTH
@@ -274,6 +297,29 @@ export default function LobbyPage() {
                       </Select>
                     ) : (
                       <div className="h-12 bg-[#0a0a0b] rounded-xl flex items-center px-4 font-black uppercase text-sm">{room.healthOption} HP</div>
+                    )}
+                  </div>
+                )}
+
+                {room.mode === 'Solo Leveling' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                      <Target className="w-3 h-3 text-emerald-500" /> TARGET SCORE
+                    </label>
+                    {isLeader ? (
+                      <Select value={room.soloGoal?.toString() || '100'} onValueChange={(val) => updateSetting('soloGoal', parseInt(val))}>
+                        <SelectTrigger className="bg-[#0a0a0b] border-none h-12 rounded-xl font-bold uppercase text-left">
+                          <SelectValue placeholder="Select Goal" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#161618] border-white/10 text-white">
+                          <SelectItem value="50">50 MARKS</SelectItem>
+                          <SelectItem value="100">100 MARKS</SelectItem>
+                          <SelectItem value="150">150 MARKS</SelectItem>
+                          <SelectItem value="200">200 MARKS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="h-12 bg-[#0a0a0b] rounded-xl flex items-center px-4 font-black uppercase text-sm">{room.soloGoal || '100'} MARKS</div>
                     )}
                   </div>
                 )}

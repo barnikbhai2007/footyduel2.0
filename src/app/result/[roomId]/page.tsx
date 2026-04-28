@@ -70,7 +70,7 @@ export default function ResultPage() {
         if (snap.exists()) {
           setParticipants(prev => {
             const others = prev.filter(p => p.id !== uid);
-            const score = room.mode === 'Party' ? (room.scores?.[uid] || 0) : (uid === room.player1Id ? room.player1CurrentHealth : room.player2CurrentHealth);
+            const score = (room.mode === 'Party' || room.mode === 'Solo Leveling') ? (room.scores?.[uid] || 0) : (uid === room.player1Id ? room.player1CurrentHealth : room.player2CurrentHealth);
             return [...others, { ...snap.data(), id: uid, score }].sort((a, b) => b.score - a.score);
           });
         }
@@ -140,7 +140,7 @@ export default function ResultPage() {
           {myRank === 1 ? "CHAMPION" : `RANK #${myRank}`}
         </h1>
         <Badge className="bg-primary text-black font-black text-xl px-8 py-1 uppercase rounded-xl">
-          {room.mode === 'Party' ? 'PARTY ARENA' : 'DUEL RESULT'}
+          {room.mode === 'Party' ? 'PARTY ARENA' : room.mode === 'Solo Leveling' ? 'SOLO LEVELING' : 'DUEL RESULT'}
         </Badge>
       </header>
 
@@ -220,7 +220,7 @@ export default function ResultPage() {
         </section>
       ) : (
         <section className="w-full max-w-2xl space-y-8">
-          <div className="grid grid-cols-2 gap-6">
+          <div className={`grid ${room.mode === 'Solo Leveling' ? 'grid-cols-1 max-w-xs mx-auto' : 'grid-cols-2'} gap-6`}>
             {sortedParticipants.map((p, i) => (
               <div key={p.id} className={`flex flex-col items-center p-6 rounded-[2rem] border-2 transition-all ${i === 0 ? 'border-primary bg-primary/10' : 'border-white/5 bg-white/5 opacity-60'}`}>
                   <div className="relative">
@@ -228,12 +228,12 @@ export default function ResultPage() {
                     <img src={p.avatarUrl} className={`w-20 h-20 rounded-full border-4 ${i === 0 ? 'border-primary' : 'border-slate-500'} object-cover`} alt="p" />
                   </div>
                   <span className="mt-4 font-black text-sm text-white uppercase">{p.displayName}</span>
-                  <span className="text-2xl font-black text-primary">{p.score} HP</span>
+                  <span className="text-2xl font-black text-primary">{p.score} {(room.mode === 'Solo Leveling') ? 'MARKS' : 'HP'}</span>
               </div>
             ))}
           </div>
 
-          {h2hData && (
+          {(room.mode === undefined || room.mode === '1v1') && h2hData && (
             <Card className="bg-white/5 border-white/10 rounded-[2.5rem] overflow-hidden">
               <CardContent className="p-8 text-center space-y-6">
                 <div className="flex items-center justify-center gap-2 text-slate-500 uppercase font-black text-xs tracking-widest">

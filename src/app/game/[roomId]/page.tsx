@@ -443,8 +443,18 @@ export default function GamePage() {
 
   const handleNextRound = async () => {
      if (!room || !roomRef) return;
-     const maxRounds = room.mode === 'Party' ? (room.maxRounds || 10) : 999;
-     const isGameOver = room.mode === 'Party' ? (currentRoundNumber >= maxRounds) : (room.player1CurrentHealth <= 0 || room.player2CurrentHealth <= 0);
+     
+     let isGameOver = false;
+     if (room.mode === 'Party') {
+       const maxRounds = room.maxRounds || 10;
+       isGameOver = currentRoundNumber >= maxRounds;
+     } else if (room.mode === 'Solo Leveling') {
+       const p1 = room.participantIds?.[0];
+       const currentScore = room.scores?.[p1] || 0;
+       isGameOver = currentScore >= (room.soloGoal || 100);
+     } else {
+       isGameOver = room.player1CurrentHealth <= 0 || room.player2CurrentHealth <= 0;
+     }
 
      if (isGameOver) {
        await updateDoc(roomRef, { status: 'Completed', finishedAt: new Date().toISOString() });
@@ -647,7 +657,7 @@ export default function GamePage() {
     return (
       <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col items-center justify-center overflow-hidden font-sans">
         {/* Dynamic Backgrounds */}
-        <video className="absolute inset-0 w-full h-full object-cover opacity-70 hidden md:block" playsInline autoPlay src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
+        <video className="absolute inset-0 w-full h-full object-cover opacity-70 hidden md:block" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
         <video className="absolute inset-0 w-full h-full object-cover opacity-70 md:hidden" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384026/Untitled_Youtube_Shorts_uttq1h.mp4" />
         
         <div className="relative z-20 flex flex-col items-center justify-center w-full h-full p-6 text-center">
@@ -805,7 +815,7 @@ export default function GamePage() {
         </div>
       </header>
 
-      <main className="flex-1 p-4 flex flex-col gap-6 max-w-lg mx-auto w-full pb-48 overflow-y-auto">
+      <main className="flex-1 p-4 flex flex-col gap-6 max-w-lg mx-auto w-full pb-[280px] overflow-y-auto">
         {gameState === 'countdown' ? (
           <div className="flex-1 flex flex-col items-center justify-center space-y-4 p-4 text-center">
              <div className="text-[10rem] font-black text-primary animate-ping leading-none">{countdown}</div>
@@ -910,7 +920,12 @@ export default function GamePage() {
 
             <div className="w-full bg-white/5 p-8 rounded-[2.5rem] border border-white/10 flex flex-col items-center text-center gap-4">
               <p className="text-5xl font-black text-white uppercase tracking-tighter italic">{targetPlayer?.name}</p>
-              {targetPlayer && <img src={getFlagUrl(targetPlayer.countryCode)} className="w-16 h-10 shadow-lg border border-white/20 rounded-md" alt="flag" />}
+              {targetPlayer && (
+                <div className="flex gap-4 items-center">
+                  <img src={getFlagUrl(targetPlayer.countryCode)} className="w-16 h-10 shadow-[0_0_15px_rgba(255,255,255,0.2)] border border-white/20 rounded-md object-cover" alt="flag" />
+                  <img src={`https://ais-dev-2elloypbdcgwcfgcgrd3zo-696922081471.asia-southeast1.run.app/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-12 h-12 rounded-full object-contain drop-shadow-md bg-white p-1" alt="club" />
+                </div>
+              )}
             </div>
             <div className="w-full space-y-2">
               <Progress value={(autoNextRoundCountdown || 0) * 20} className="h-1.5 bg-white/10" />
