@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Allow public listing of userProfiles and gameRooms for landing page stats and results
+    match /userProfiles/{userId} {
+      allow get, list: if true;
+      allow create, update: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /gameRooms/{gameRoomId} {
+      allow get, list: if true;
+      allow create, update: if isSignedIn();
+      
+      match /gameRounds/{roundId} {
+        allow read, write: if isSignedIn();
+      }
+
+      match /emotes/{emoteId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    match /battleHistories/{battleHistoryId} {
+      allow get, list: if true;
+      allow create, update: if isSignedIn();
+    }
+
+    match /footballers/{footballerId} {
+      allow read: if true;
+    }
+  }
+}

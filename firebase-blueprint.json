@@ -1,0 +1,284 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a player's profile, linked to their Google account, storing general information and lifetime statistics.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "Unique identifier provided by the external Google authentication system for the user. (Relationship: External 1:1 UserProfile)"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name, typically retrieved from their Google account."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was first created.",
+          "format": "date-time"
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "description": "Timestamp of the user's last successful login.",
+          "format": "date-time"
+        },
+        "totalGamesPlayed": {
+          "type": "number",
+          "description": "The total number of games this user has participated in."
+        },
+        "totalWins": {
+          "type": "number",
+          "description": "The total number of games this user has won."
+        },
+        "totalLosses": {
+          "type": "number",
+          "description": "The total number of games this user has lost."
+        },
+        "weeklyWins": {
+          "type": "number",
+          "description": "Wins accumulated in the current season."
+        },
+        "winStreak": {
+          "type": "number",
+          "description": "Current number of consecutive wins. Resets on loss."
+        },
+        "lastWeeklyReset": {
+          "type": "string",
+          "description": "Timestamp of the last season reset for this user."
+        }
+      },
+      "required": [
+        "id",
+        "googleId",
+        "displayName",
+        "createdAt",
+        "totalGamesPlayed",
+        "totalWins",
+        "totalLosses",
+        "weeklyWins",
+        "winStreak"
+      ]
+    },
+    "Footballer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Footballer",
+      "type": "object",
+      "description": "Represents a footballer, containing static data like name, country, position, and hints used in the game.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Footballer entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the footballer."
+        },
+        "countryCode": {
+          "type": "string",
+          "description": "The ISO 3166-1 alpha-2 country code for the footballer's nationality."
+        },
+        "position": {
+          "type": "string",
+          "description": "The primary playing position of the footballer (e.g., 'ST', 'CM', 'CB')."
+        },
+        "club": {
+          "type": "string",
+          "description": "The current club of the footballer."
+        },
+        "hints": {
+          "type": "array",
+          "description": "A list of textual hints associated with this footballer, used for the guessing game.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "version": {
+          "type": "string",
+          "description": "The game version/pack this footballer belongs to."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "countryCode",
+        "position",
+        "club",
+        "hints",
+        "version"
+      ]
+    },
+    "GameRoom": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GameRoom",
+      "type": "object",
+      "description": "Represents a single 1v1 game room, including its configuration, players, and final game outcome.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the game room, typically a Firebase-generated code."
+        },
+        "player1Id": {
+          "type": "string",
+          "description": "Reference to the UserProfile who created the room."
+        },
+        "player2Id": {
+          "type": "string",
+          "description": "Reference to the UserProfile who joined the room."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current state of the game room (e.g., 'Lobby', 'InProgress', 'Completed')."
+        },
+        "healthOption": {
+          "type": "number",
+          "description": "The starting health points for each player."
+        },
+        "player1CurrentHealth": {
+          "type": "number",
+          "description": "The current health points of player 1."
+        },
+        "player2CurrentHealth": {
+          "type": "number",
+          "description": "The current health points of player 2."
+        },
+        "currentRoundNumber": {
+          "type": "number",
+          "description": "The sequential number of the current active round."
+        },
+        "gameVersion": {
+          "type": "string",
+          "description": "The version of the game being played."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "winnerId": {
+          "type": "string"
+        },
+        "loserId": {
+          "type": "string"
+        },
+        "finishedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "player1Id",
+        "status",
+        "healthOption",
+        "createdAt"
+      ]
+    },
+    "GameRound": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GameRound",
+      "type": "object",
+      "description": "Represents a single round within a game, detailing the footballer to guess and player outcomes.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "gameRoomId": {
+          "type": "string"
+        },
+        "roundNumber": {
+          "type": "number"
+        },
+        "footballerId": {
+          "type": "string"
+        },
+        "player1Rarity": {
+          "type": "string"
+        },
+        "player2Rarity": {
+          "type": "string"
+        },
+        "player1Guess": {
+          "type": "string"
+        },
+        "player2Guess": {
+          "type": "string"
+        },
+        "player1ScoreChange": {
+          "type": "number"
+        },
+        "player2ScoreChange": {
+          "type": "number"
+        }
+      }
+    },
+    "BattleHistory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BattleHistory",
+      "type": "object",
+      "description": "Aggregates statistics for head-to-head matches between two specific players.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "player1Id": {
+          "type": "string"
+        },
+        "player2Id": {
+          "type": "string"
+        },
+        "player1Wins": {
+          "type": "number"
+        },
+        "player2Wins": {
+          "type": "number"
+        },
+        "totalMatches": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "auth": {
+    "providers": [
+      "google"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/userProfiles/{userId}",
+        "definition": {
+          "entityName": "UserProfile"
+        }
+      },
+      {
+        "path": "/gameRooms/{gameRoomId}",
+        "definition": {
+          "entityName": "GameRoom"
+        }
+      },
+      {
+        "path": "/gameRooms/{gameRoomId}/gameRounds/{roundId}",
+        "definition": {
+          "entityName": "GameRound"
+        }
+      },
+      {
+        "path": "/battleHistories/{battleHistoryId}",
+        "definition": {
+          "entityName": "BattleHistory"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 16 20% 12%;
+    --foreground: 0 0% 98%;
+    --card: 16 20% 15%;
+    --card-foreground: 0 0% 98%;
+    --popover: 16 20% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 19 81% 49%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 42 85% 66%;
+    --secondary-foreground: 16 20% 12%;
+    --muted: 16 20% 20%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 42 85% 66%;
+    --accent-foreground: 16 20% 12%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 16 20% 25%;
+    --input: 16 20% 25%;
+    --ring: 19 81% 49%;
+    --radius: 1rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline;
+  }
+}
+
+/* Pack Opening Animations */
+.fc-card-container {
+  perspective: 1000px;
+}
+
+.fc-animation-reveal {
+  animation: card-reveal 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.fc-flash-overlay {
+  animation: flash 0.5s ease-out forwards;
+}
+
+.fc-text-glow {
+  text-shadow: 0 0 20px rgba(255, 123, 0, 0.8), 0 0 40px rgba(255, 123, 0, 0.4);
+}
+
+@keyframes card-reveal {
+  0% { 
+    transform: scale(0.3) rotateY(90deg) translateZ(-500px); 
+    opacity: 0; 
+    filter: brightness(3);
+  }
+  60% {
+    transform: scale(1.1) rotateY(0deg) translateZ(50px);
+    filter: brightness(1.5);
+  }
+  100% { 
+    transform: scale(1) rotateY(0deg) translateZ(0); 
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes flash {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Emote Floating Animation - Slowed down to 6s for better visibility */
+.emote-float {
+  animation: float-up-right 6s ease-out forwards;
+}
+
+@keyframes float-up-right {
+  0% { 
+    transform: translateY(0) translateX(0) scale(0.5) rotate(0deg); 
+    opacity: 0; 
+  }
+  10% { 
+    opacity: 1; 
+    transform: translateY(-50px) translateX(0) scale(1.3) rotate(-5deg); 
+  }
+  100% { 
+    transform: translateY(-110vh) translateX(-60px) scale(1.8) rotate(20deg); 
+    opacity: 0; 
+  }
+}
+
+/* Result Page Confetti Animation */
+@keyframes confetti {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+}
+
+.animate-confetti {
+  animation: confetti 4s ease-out infinite;
+}
+
+@keyframes width-grow {
+  from { width: 0; }
+  to { width: 128px; }
+}
+
+.animate-width-grow {
+  animation: width-grow 0.5s ease-out forwards;
+}
