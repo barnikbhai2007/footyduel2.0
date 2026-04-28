@@ -42,6 +42,7 @@ export default function GamePage() {
   const isInitializingRound = useRef(false);
   const lastProcessedRound = useRef<number>(0);
   const revealTimeouts = useRef<NodeJS.Timeout[]>([]);
+  const previousGuessCount = useRef<number>(0);
 
   const roomRef = useMemoFirebase(() => {
     if (!user || !roomId) return null;
@@ -175,11 +176,23 @@ export default function GamePage() {
   useEffect(() => {
     if (roundData?.timerStartedAt && gameState === 'playing' && roundData.roundNumber === currentRoundNumber) {
       const startTime = new Date(roundData.timerStartedAt).getTime();
-      const maxTime = room?.mode === 'Party' ? (room?.timePerRound || 60) : 15;
+      let maxTime = 15;
+      if (room?.mode === 'Party') {
+        maxTime = room?.timePerRound === '30_after_guess' ? 30 : (room?.timePerRound || 60);
+      } else if (room?.mode === '1v1' || room?.mode === 'Solo Leveling') {
+        maxTime = 30;
+      }
+      
       const tick = () => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const remaining = Math.max(0, maxTime - elapsed);
         setRoundTimer(remaining);
+        
+        if (remaining <= 15 && remaining > 0 && !revealTriggered.current) {
+          playSound('submit'); // play a sound tick
+          // Add a red visual warning to body if not already there, we can do it via a state, but since we want it reactive we will do it below in rendering.
+        }
+        
         if (remaining === 0 && !revealTriggered.current) {
           handleRevealTrigger();
         }
@@ -188,7 +201,7 @@ export default function GamePage() {
       const interval = setInterval(tick, 1000);
       return () => clearInterval(interval);
     }
-  }, [roundData?.timerStartedAt, gameState, currentRoundNumber, room?.timePerRound, room?.mode]);
+  }, [roundData?.timerStartedAt, gameState, currentRoundNumber, room?.timePerRound, room?.mode, playSound]);
 
   useEffect(() => {
     if (currentRoundNumber !== lastProcessedRound.current) {
@@ -197,6 +210,7 @@ export default function GamePage() {
       isInitializingRound.current = false;
       revealTimeouts.current.forEach(t => clearTimeout(t));
       revealTimeouts.current = [];
+      previousGuessCount.current = 0;
       setRevealStep('none');
       setGameState(currentRoundNumber === 1 ? 'countdown' : 'playing');
       setGuessInput("");
@@ -235,7 +249,7 @@ export default function GamePage() {
           hintsRevealedCount: 1,
           guesses: {},
           roundEndedAt: null,
-          timerStartedAt: roomData.mode === 'Party' ? now : null,
+          timerStartedAt: (roomData.mode === 'Party' && roomData.timePerRound !== '30_after_guess') || roomData.mode === 'Solo Leveling' ? now : null,
           resultsProcessed: false,
           scoreChanges: {}
         });
@@ -268,6 +282,24 @@ export default function GamePage() {
       
       const allParticipants = room?.participantIds || [];
       const guesses = roundData.guesses || {};
+      
+      // Feature: Check if someone guessed and play sound + popup
+      const newGuessCount = Object.keys(guesses).length;
+      if (newGuessCount > previousGuessCount.current) {
+        // Find who guessed
+        Object.keys(guesses).forEach(uid => {
+          if (!previousGuessCount.current) return; // don't toaster if round just loaded it
+          if (uid !== user?.uid && user && !participantProfiles[uid]?.hasGuessedBefore) {
+             const userProfile = participantProfiles[uid];
+             if (userProfile && guesses[uid]) {
+                toast({ title: "ARENA ACTIVITY", description: `${userProfile.displayName || 'A PLAYER'} GUESSED/SKIPPED!`, duration: 2000 });
+                playSound('pop'); 
+             }
+          }
+        });
+      }
+      previousGuessCount.current = newGuessCount;
+
       const everyoneVoted = allParticipants.length > 0 && allParticipants.every((uid: string) => !!guesses[uid]);
       
       // Early Skip Logic for Party Mode: Everyone Locked In -> Skip Timer
@@ -338,7 +370,7 @@ export default function GamePage() {
     const now = new Date().toISOString();
     const update: any = { [`guesses.${user.uid}`]: { text: guessInput, isCorrect, guessedAt: now } };
     
-    if (room?.mode === '1v1' && !roundData.timerStartedAt) {
+    if (!roundData.timerStartedAt && (room?.mode === '1v1' || (room?.mode === 'Party' && room?.timePerRound === '30_after_guess'))) {
       update.timerStartedAt = now;
     }
     
@@ -355,7 +387,7 @@ export default function GamePage() {
     const now = new Date().toISOString();
     const update: any = { [`guesses.${user.uid}`]: { text: "SKIPPED", isCorrect: false, guessedAt: now } };
     
-    if (room?.mode === '1v1' && !roundData?.timerStartedAt) {
+    if (!roundData?.timerStartedAt && (room?.mode === '1v1' || (room?.mode === 'Party' && room?.timePerRound === '30_after_guess'))) {
       update.timerStartedAt = now;
     }
     
@@ -448,7 +480,13 @@ export default function GamePage() {
 
       const guesses = rData.guesses || {};
       const timerStart = new Date(rData.timerStartedAt || 0).getTime();
-      const maxTime = (rmData.timePerRound || 60) * 1000;
+      let maxTimeSeconds = 15;
+      if (rmData.mode === 'Party') {
+        maxTimeSeconds = rmData.timePerRound === '30_after_guess' ? 30 : (rmData.timePerRound || 60);
+      } else if (rmData.mode === '1v1' || rmData.mode === 'Solo Leveling') {
+        maxTimeSeconds = 30;
+      }
+      const maxTime = maxTimeSeconds * 1000;
       
       const updates: any = { lastActionAt: new Date().toISOString() };
       const roundScoreChanges: Record<string, number> = {};
@@ -594,8 +632,8 @@ export default function GamePage() {
     return (
       <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col items-center justify-center overflow-hidden font-sans">
         {/* Dynamic Backgrounds */}
-        <video className="absolute inset-0 w-full h-full object-cover opacity-70 hidden md:block" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
-        <video className="absolute inset-0 w-full h-full object-cover opacity-70 md:hidden" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384026/Untitled_Youtube_Shorts_uttq1h.mp4" />
+        <video className="absolute inset-0 w-full h-full object-cover opacity-70 hidden md:block" playsInline autoPlay src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
+        <video className="absolute inset-0 w-full h-full object-cover opacity-70 md:hidden" playsInline autoPlay src="https://res.cloudinary.com/speed-searches/video/upload/v1777384026/Untitled_Youtube_Shorts_uttq1h.mp4" />
         
         <div className="relative z-20 flex flex-col items-center justify-center w-full h-full p-6 text-center">
           
@@ -678,6 +716,12 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {roundTimer !== null && roundTimer <= 15 && roundTimer > 0 && (
+         <div className="absolute inset-0 pointer-events-none bg-red-600/20 animate-[pulse_1s_ease-in-out_infinite] z-0 z-[1]" />
+      )}
+      
+      {/* Ensure UI remains above the pulse */}
+      <div className="relative z-10 flex flex-col flex-1 pointer-events-auto">
       {activeEmotes.map(emote => {
         const data = ALL_EMOTES.find(e => e.id === emote.emoteId);
         return (
@@ -849,6 +893,7 @@ export default function GamePage() {
           )}
         </div>
       </footer>
+      </div>
     </div>
   );
 }

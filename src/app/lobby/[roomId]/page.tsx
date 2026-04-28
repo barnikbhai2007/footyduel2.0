@@ -57,6 +57,12 @@ export default function LobbyPage() {
           return;
         }
 
+        if (room.mode === 'Solo Leveling' && ids.length >= 1) {
+          toast({ variant: "destructive", title: "ARENA FULL", description: "SOLO LEVELING ALLOWS 1 PLAYER." });
+          router.push('/');
+          return;
+        }
+
         const update: any = { 
           participantIds: arrayUnion(user.uid), 
           lastActionAt: new Date().toISOString() 
@@ -135,7 +141,7 @@ export default function LobbyPage() {
   };
 
   const startGame = async () => {
-    if ((room.participantIds?.length || 0) < 2) {
+    if (room.mode !== 'Solo Leveling' && (room.participantIds?.length || 0) < 2) {
       toast({ variant: "destructive", title: "WAIT!", description: "NEED AT LEAST 2 PLAYERS TO START." });
       return;
     }
@@ -169,7 +175,8 @@ export default function LobbyPage() {
   }
 
   const isPartyMode = room.mode === 'Party';
-  const maxSlots = isPartyMode ? 100 : 2;
+  const isSoloMode = room.mode === 'Solo Leveling';
+  const maxSlots = isPartyMode ? 100 : isSoloMode ? 1 : 2;
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] p-4 flex flex-col items-center">
@@ -237,6 +244,7 @@ export default function LobbyPage() {
                       <SelectContent className="bg-[#161618] border-white/10 text-white">
                         <SelectItem value="1v1">1v1 DUEL</SelectItem>
                         <SelectItem value="Party">PARTY ARENA</SelectItem>
+                        <SelectItem value="Solo Leveling">SOLO LEVELING</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
@@ -299,11 +307,12 @@ export default function LobbyPage() {
                       <Clock className="w-3 h-3 text-cyan-500" /> TIME LIMIT
                     </label>
                     {isLeader ? (
-                      <Select value={room.timePerRound?.toString() || ''} onValueChange={(val) => updateSetting('timePerRound', parseInt(val))}>
+                      <Select value={room.timePerRound?.toString() || ''} onValueChange={(val) => updateSetting('timePerRound', val === '30_after_guess' ? val : parseInt(val))}>
                         <SelectTrigger className="bg-[#0a0a0b] border-none h-12 rounded-xl font-bold uppercase text-left">
                           <SelectValue placeholder="Select Time" />
                         </SelectTrigger>
                         <SelectContent className="bg-[#161618] border-white/10 text-white">
+                          <SelectItem value="30_after_guess">30S AFTER 1ST GUESS/SKIP</SelectItem>
                           <SelectItem value="60">1 MINUTE</SelectItem>
                           <SelectItem value="120">2 MINUTES</SelectItem>
                           <SelectItem value="180">3 MINUTES</SelectItem>
@@ -311,7 +320,7 @@ export default function LobbyPage() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="h-12 bg-[#0a0a0b] rounded-xl flex items-center px-4 font-black uppercase text-sm">{room.timePerRound ? `${room.timePerRound / 60} MIN` : '---'}</div>
+                      <div className="h-12 bg-[#0a0a0b] rounded-xl flex items-center px-4 font-black uppercase text-sm">{room.timePerRound === '30_after_guess' ? '30S AFTER 1ST GUESS' : room.timePerRound ? `${room.timePerRound / 60} MIN` : '---'}</div>
                     )}
                   </div>
                 )}
