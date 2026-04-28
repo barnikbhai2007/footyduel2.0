@@ -514,6 +514,21 @@ export default function GamePage() {
           roundScoreChanges[uid] = pts;
         });
         updates.scores = scores;
+      } else if (rmData.mode === 'Solo Leveling') {
+        const p1 = rmData.participantIds[0];
+        const g1 = guesses[p1];
+        let pts = 0;
+        if (g1?.isCorrect) {
+          pts = 10;
+        } else if (g1 && g1.text !== "SKIPPED") {
+          pts = -5;
+        } else if (!g1) {
+          pts = -5; // time out is wrong
+        }
+        const scores = { ...(rmData.scores || {}) };
+        scores[p1] = Math.max(0, (scores[p1] || 0) + pts);
+        updates.scores = scores;
+        roundScoreChanges[p1] = pts;
       } else {
         const p1 = rmData.participantIds[0];
         const p2 = rmData.participantIds[1];
@@ -633,7 +648,7 @@ export default function GamePage() {
       <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col items-center justify-center overflow-hidden font-sans">
         {/* Dynamic Backgrounds */}
         <video className="absolute inset-0 w-full h-full object-cover opacity-70 hidden md:block" playsInline autoPlay src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
-        <video className="absolute inset-0 w-full h-full object-cover opacity-70 md:hidden" playsInline autoPlay src="https://res.cloudinary.com/speed-searches/video/upload/v1777384026/Untitled_Youtube_Shorts_uttq1h.mp4" />
+        <video className="absolute inset-0 w-full h-full object-cover opacity-70 md:hidden" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384026/Untitled_Youtube_Shorts_uttq1h.mp4" />
         
         <div className="relative z-20 flex flex-col items-center justify-center w-full h-full p-6 text-center">
           
@@ -668,10 +683,10 @@ export default function GamePage() {
             }`}>
               {targetPlayer && (
                 <>
-                  <div className="w-[50vw] max-w-[240px] aspect-square rounded-full border-[6px] border-black/50 bg-white/10 shadow-[0_0_80px_rgba(255,255,255,0.4)] flex flex-col items-center justify-center overflow-hidden mb-6 p-1 backdrop-blur-sm">
-                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(targetPlayer.club)}&background=random&color=fff&size=256&bold=true`} className="w-full h-full rounded-full object-contain filter drop-shadow-lg" alt="club" />
+                  <div className="w-[40vw] max-w-[180px] aspect-square rounded-full border-[6px] border-black/50 bg-white/10 shadow-[0_0_80px_rgba(255,255,255,0.4)] flex flex-col items-center justify-center overflow-hidden mb-6 p-1 backdrop-blur-sm">
+                    <img src={`https://ais-dev-2elloypbdcgwcfgcgrd3zo-696922081471.asia-southeast1.run.app/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full rounded-full object-contain filter drop-shadow-lg" alt="club" />
                   </div>
-                  <span className="text-[40px] md:text-[60px] font-black italic uppercase text-white drop-shadow-[0_0_30px_rgba(0,0,0,0.8)] tracking-tight max-w-[90vw] text-center leading-none">{targetPlayer.club}</span>
+                  <span className="text-[32px] md:text-[48px] font-black italic uppercase text-white drop-shadow-[0_0_30px_rgba(0,0,0,0.8)] tracking-tight max-w-[90vw] text-center leading-none">{targetPlayer.club}</span>
                 </>
               )}
             </div>
@@ -681,23 +696,23 @@ export default function GamePage() {
           {/* Final Card */}
           {revealStep === 'card-in' && currentRarity && targetPlayer && (
             <div className="relative z-50 animate-in fade-in zoom-in slide-in-from-bottom-20 duration-500 ease-out">
-              <div className={`w-[320px] h-[480px] md:w-[400px] md:h-[600px] rounded-3xl shadow-[0_0_120px_rgba(0,0,0,0.9)] flex flex-col border-[4px] md:border-[6px] overflow-hidden relative bg-gradient-to-br ${currentRarity.bg} border-yellow-400/60`}>
+              <div className={`w-[260px] h-[380px] md:w-[320px] md:h-[480px] rounded-3xl shadow-[0_0_120px_rgba(0,0,0,0.9)] flex flex-col border-[4px] md:border-[6px] overflow-hidden relative bg-gradient-to-br ${currentRarity.bg} border-yellow-400/60`}>
                 <img src={REVEAL_CARD_IMG} className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-overlay" alt="background" />
                 
-                <div className="mt-auto relative z-20 pb-8 px-6 pt-24 flex flex-col h-full justify-end bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+                <div className="mt-auto relative z-20 pb-6 px-4 pt-16 flex flex-col h-full justify-end bg-gradient-to-t from-black/90 via-black/40 to-transparent">
                   
-                  <div className="flex justify-between items-end mb-6">
-                    <div className="flex flex-col gap-4">
-                      <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[64px] md:w-[76px] shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/20" alt="flag" />
-                      <div className="w-[64px] h-[64px] md:w-[76px] md:h-[76px] rounded-full border border-white/20 bg-black/60 overflow-hidden flex items-center justify-center p-[2px] shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(targetPlayer.club)}&background=random&color=fff&size=128&bold=true`} className="w-full h-full rounded-full object-contain filter drop-shadow-md" alt="club" />
+                  <div className="flex justify-between items-end mb-4">
+                    <div className="flex flex-col gap-3">
+                      <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[48px] md:w-[56px] shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/20" alt="flag" />
+                      <div className="w-[48px] h-[48px] md:w-[56px] md:h-[56px] rounded-full border border-white/20 bg-black/60 overflow-hidden flex items-center justify-center p-[2px] shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                        <img src={`https://ais-dev-2elloypbdcgwcfgcgrd3zo-696922081471.asia-southeast1.run.app/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full rounded-full object-contain filter drop-shadow-md" alt="club" />
                       </div>
                     </div>
-                    <span className="text-[100px] md:text-[120px] font-black italic text-yellow-400 drop-shadow-[0_0_50px_rgba(0,0,0,0.8)] leading-[0.8] tracking-tighter">{targetPlayer.position}</span>
+                    <span className="text-[70px] md:text-[90px] font-black italic text-yellow-400 drop-shadow-[0_0_50px_rgba(0,0,0,0.8)] leading-[0.8] tracking-tighter">{targetPlayer.position}</span>
                   </div>
 
-                  <div className="bg-gradient-to-r from-transparent via-black/80 to-transparent py-4 border-y border-white/20 flex justify-center text-center w-[120%] -ml-[10%]">
-                    <span className="text-[32px] md:text-[44px] font-black uppercase italic text-white leading-[0.9] tracking-tight">{targetPlayer.name}</span>
+                  <div className="bg-gradient-to-r from-transparent via-black/80 to-transparent py-3 border-y border-white/20 flex justify-center text-center w-[120%] -ml-[10%]">
+                    <span className="text-[24px] md:text-[32px] font-black uppercase italic text-white leading-[0.9] tracking-tight">{targetPlayer.name}</span>
                   </div>
 
                 </div>
@@ -790,7 +805,7 @@ export default function GamePage() {
         </div>
       </header>
 
-      <main className="flex-1 p-4 flex flex-col gap-6 max-w-lg mx-auto w-full pb-48">
+      <main className="flex-1 p-4 flex flex-col gap-6 max-w-lg mx-auto w-full pb-48 overflow-y-auto">
         {gameState === 'countdown' ? (
           <div className="flex-1 flex flex-col items-center justify-center space-y-4 p-4 text-center">
              <div className="text-[10rem] font-black text-primary animate-ping leading-none">{countdown}</div>
@@ -805,25 +820,94 @@ export default function GamePage() {
         ) : gameState === 'result' ? (
           <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-8 animate-in fade-in zoom-in duration-500">
             <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">ROUND SUMMARY</h2>
-            <ScrollArea className="w-full max-h-[40vh] bg-white/5 p-4 rounded-3xl border border-white/10">
-              <div className="space-y-3">
-                {participantIds
-                  .map(uid => ({ uid, scoreChange: roundData?.scoreChanges?.[uid] ?? 0 }))
-                  .sort((a, b) => b.scoreChange - a.scoreChange)
-                  .slice(0, 10)
-                  .map(({ uid, scoreChange }) => (
-                    <div key={uid} className={`flex items-center justify-between p-3 rounded-2xl border ${uid === user?.uid ? 'bg-primary/20 border-primary' : 'bg-white/5 border-white/5'}`}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-black text-white uppercase truncate max-w-[100px]">{uid === user?.uid ? "YOU" : (participantProfiles[uid]?.displayName || "OPPONENT")}</span>
+            
+            {room.mode === 'Party' ? (
+              <ScrollArea className="w-full max-h-[40vh] bg-white/5 p-4 rounded-3xl border border-white/10 relative">
+                <div className="space-y-3">
+                  {(() => {
+                    const currentScores: Record<string, number> = room.scores || {};
+                    const scoreChanges: Record<string, number> = roundData?.scoreChanges || {};
+                    
+                    const oldScores = participantIds.map(uid => ({
+                      uid, score: (currentScores[uid] || 0) - (scoreChanges[uid] || 0)
+                    })).sort((a,b) => b.score - a.score);
+                    
+                    const newScores = participantIds.map(uid => ({
+                      uid, score: (currentScores[uid] || 0)
+                    })).sort((a,b) => b.score - a.score);
+                    
+                    const myRankIndex = newScores.findIndex(s => s.uid === user?.uid);
+                    
+                    return (
+                      <>
+                        {newScores.slice(0, 10).map(({ uid, score }, idx) => {
+                          const oldIdx = oldScores.findIndex(s => s.uid === uid);
+                          const rankChange = oldIdx - idx;
+                          const scoreChange = scoreChanges[uid] || 0;
+                          
+                          return (
+                            <div key={uid} className={`flex items-center justify-between p-3 rounded-2xl border ${uid === user?.uid ? 'bg-primary/20 border-primary shadow-lg' : 'bg-white/5 border-white/5'}`}>
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-black text-slate-400 w-6">#{idx + 1}</span>
+                                <span className="text-[10px] font-black text-white uppercase truncate max-w-[100px]">{uid === user?.uid ? "YOU" : (participantProfiles[uid]?.displayName || "OPPONENT")}</span>
+                                {rankChange !== 0 && (
+                                  <span className={`text-[10px] font-black animate-pulse ${rankChange > 0 ? "text-green-500" : "text-red-500"}`}>
+                                    {rankChange > 0 ? "▲" : "▼"}{Math.abs(rankChange)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge className={`${scoreChange > 0 ? "bg-green-500" : (scoreChange < 0 ? "bg-red-500" : "bg-slate-700")} text-white font-black text-[10px]`}>
+                                  {scoreChange > 0 ? "+" : ""}{scoreChange}
+                                </Badge>
+                                <span className="text-sm font-black text-primary w-12 text-right">{score}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {myRankIndex >= 10 && user && (
+                          <div className="pt-2 mt-2 border-t border-white/10 sticky bottom-0 bg-black/60 shadow-[0_-10px_20px_rgba(0,0,0,0.5)] z-10 backdrop-blur-md p-2 -mx-2 rounded-xl">
+                            <div className="flex items-center justify-between p-3 rounded-2xl border bg-primary/20 border-primary shadow-lg">
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-black text-primary w-6">#{myRankIndex + 1}</span>
+                                <span className="text-[10px] font-black text-white uppercase truncate max-w-[100px]">YOU</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge className={`${(scoreChanges[user.uid] || 0) > 0 ? "bg-green-500" : ((scoreChanges[user.uid] || 0) < 0 ? "bg-red-500" : "bg-slate-700")} text-white font-black text-[10px]`}>
+                                  {(scoreChanges[user.uid] || 0) > 0 ? "+" : ""}{scoreChanges[user.uid] || 0}
+                                </Badge>
+                                <span className="text-sm font-black text-primary w-12 text-right">{newScores[myRankIndex].score}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </ScrollArea>
+            ) : (
+              <ScrollArea className="w-full max-h-[40vh] bg-white/5 p-4 rounded-3xl border border-white/10">
+                <div className="space-y-3">
+                  {participantIds
+                    .map(uid => ({ uid, scoreChange: roundData?.scoreChanges?.[uid] ?? 0 }))
+                    .sort((a, b) => b.scoreChange - a.scoreChange)
+                    .slice(0, 10)
+                    .map(({ uid, scoreChange }) => (
+                      <div key={uid} className={`flex items-center justify-between p-3 rounded-2xl border ${uid === user?.uid ? 'bg-primary/20 border-primary' : 'bg-white/5 border-white/5'}`}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-black text-white uppercase truncate max-w-[100px]">{uid === user?.uid ? "YOU" : (participantProfiles[uid]?.displayName || "OPPONENT")}</span>
+                        </div>
+                        <Badge className={`${scoreChange > 0 ? "bg-green-500" : (scoreChange < 0 ? "bg-red-500" : "bg-slate-700")} text-white font-black`}>
+                          {scoreChange > 0 ? "+" : ""}{scoreChange} {room.mode === 'Party' ? 'PTS' : 'HP'}
+                        </Badge>
                       </div>
-                      <Badge className={`${scoreChange > 0 ? "bg-green-500" : (scoreChange < 0 ? "bg-red-500" : "bg-slate-700")} text-white font-black`}>
-                        {scoreChange > 0 ? "+" : ""}{scoreChange} {room.mode === 'Party' ? 'PTS' : 'HP'}
-                      </Badge>
-                    </div>
-                  ))
-                }
-              </div>
-            </ScrollArea>
+                    ))
+                  }
+                </div>
+              </ScrollArea>
+            )}
+
             <div className="w-full bg-white/5 p-8 rounded-[2.5rem] border border-white/10 flex flex-col items-center text-center gap-4">
               <p className="text-5xl font-black text-white uppercase tracking-tighter italic">{targetPlayer?.name}</p>
               {targetPlayer && <img src={getFlagUrl(targetPlayer.countryCode)} className="w-16 h-10 shadow-lg border border-white/20 rounded-md" alt="flag" />}
