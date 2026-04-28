@@ -13,7 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { GoogleAuthProvider, signInWithPopup, signInAnonymously } from "firebase/auth";
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc, collection, query, where, limit, getCountFromServer, arrayUnion, orderBy, getDocs } from "firebase/firestore";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -159,30 +159,29 @@ export default function LandingPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!auth || typeof window === 'undefined') return;
+    getRedirectResult(auth).then(async (result) => {
+      if (result && result.user) {
+        const loggedUser = result.user;
+        const userRef = doc(db, "userProfiles", loggedUser.uid);
+        const userSnap = await getDoc(userRef);
+        startAssetSync(loggedUser.uid, loggedUser.displayName, loggedUser.photoURL, !userSnap.exists());
+      }
+    }).catch(err => {
+      console.error("Redirect login error:", err);
+    });
+  }, [auth, db]);
+
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
+    setIsActionLoading(true);
     try {
-      const result = await signInWithPopup(auth, provider);
-      const loggedUser = result.user;
-      const userRef = doc(db, "userProfiles", loggedUser.uid);
-      const userSnap = await getDoc(userRef);
-      startAssetSync(loggedUser.uid, loggedUser.displayName, loggedUser.photoURL, !userSnap.exists());
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Google login error:", error);
       toast({ variant: "destructive", title: "Login failed", description: "Google authentication error." });
-    }
-  };
-
-  const handleGuestLogin = async () => {
-    try {
-      const result = await signInAnonymously(auth);
-      const loggedUser = result.user;
-      const userRef = doc(db, "userProfiles", loggedUser.uid);
-      const userSnap = await getDoc(userRef);
-      startAssetSync(loggedUser.uid, "Guest Player", null, !userSnap.exists());
-    } catch (error: any) {
-      console.error("Anonymous login error:", error);
-      toast({ variant: "destructive", title: "Login failed", description: "Anonymous authentication error." });
+      setIsActionLoading(false);
     }
   };
 
@@ -383,15 +382,16 @@ export default function LandingPage() {
       <div className="relative z-10 w-full max-w-md mx-auto space-y-10 py-8 flex flex-col items-center">
         <header className="text-center space-y-4 w-full">
           <div className="inline-flex p-4 rounded-3xl bg-primary/20 text-primary border border-primary/20 mb-2 animate-bounce"><Swords className="w-12 h-12" /></div>
-          <h1 className="text-6xl font-black text-white uppercase leading-none">FOOTY DUEL</h1>
+          <h1 className="text-6xl font-black text-white uppercase leading-none">FOOTY DECODE</h1>
         </header>
 
         {!user ? (
           <Card className="bg-[#161618] border-white/5 shadow-2xl rounded-[2.5rem] overflow-hidden w-full">
             <CardHeader className="text-center pb-2"><CardTitle className="text-2xl font-black text-white uppercase">AUTHENTICATION</CardTitle></CardHeader>
             <CardContent className="pt-4 space-y-3">
-              <Button onClick={handleGoogleLogin} className="w-full h-16 bg-white text-black font-black text-lg gap-3 rounded-2xl hover:scale-[1.02] transition-transform">GOOGLE SIGN IN</Button>
-              <Button onClick={handleGuestLogin} variant="outline" className="w-full h-16 bg-[#1f1f22] text-white font-black text-lg gap-3 rounded-2xl hover:scale-[1.02] transition-transform">PLAY AS GUEST</Button>
+              <Button disabled={isActionLoading} onClick={handleGoogleLogin} className="w-full h-16 bg-white text-black font-black text-lg gap-3 rounded-2xl hover:scale-[1.02] transition-transform">
+                {isActionLoading ? <Swords className="w-6 h-6 animate-spin text-black" /> : "GOOGLE SIGN IN"}
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -417,10 +417,16 @@ export default function LandingPage() {
             </div>
 
             <div className="grid gap-3">
-              <Button onClick={handleCreateRoom} className="w-full h-12 text-sm font-black bg-primary rounded-xl uppercase shadow-lg hover:scale-[1.02] transition-all group">CREATE ARENA <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform" /></Button>
+              <Button disabled={isActionLoading} onClick={handleCreateRoom} className="w-full h-12 text-sm font-black bg-primary rounded-xl uppercase shadow-lg hover:scale-[1.02] transition-all group">
+                {!isActionLoading && "CREATE ARENA"}
+                {isActionLoading && roomCode === "" ? "CREATING ARENA..." : (isActionLoading ? "PLEASE WAIT..." : "")}
+                {!isActionLoading && <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform" />}
+              </Button>
               <div className="flex gap-2">
-                <Input placeholder="CODE" className="h-14 bg-[#161618] text-center font-black tracking-widest text-2xl rounded-xl border-white/10" value={roomCode} onChange={(e) => setRoomCode(e.target.value)} maxLength={6} />
-                <Button onClick={handleJoinRoom} variant="secondary" className="h-14 px-8 font-black rounded-xl uppercase text-lg shadow-xl">JOIN</Button>
+                <Input placeholder="CODE" className="h-14 bg-[#161618] text-center font-black tracking-widest text-2xl rounded-xl border-white/10" value={roomCode} onChange={(e) => setRoomCode(e.target.value)} maxLength={6} disabled={isActionLoading} />
+                <Button disabled={isActionLoading || !roomCode} onClick={handleJoinRoom} variant="secondary" className="h-14 px-8 font-black rounded-xl uppercase text-lg shadow-xl">
+                   {isActionLoading && roomCode !== "" ? <Swords className="w-4 h-4 animate-spin" /> : "JOIN"}
+                </Button>
               </div>
             </div>
 

@@ -5,7 +5,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AudioController } from '@/components/AudioController';
 
 export const metadata: Metadata = {
-  title: 'FootyDuel - Guess the Footballer',
+  title: 'Footy Decode',
   description: '1v1 real-time football guessing game',
 };
 

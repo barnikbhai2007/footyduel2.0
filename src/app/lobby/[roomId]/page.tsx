@@ -118,7 +118,7 @@ export default function LobbyPage() {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: 'Join my FootyDuel Arena!',
+          title: 'Join my Footy Decode Arena!',
           text: `Use code ${roomIdStr} to join the match.`,
           url: shareUrl,
         });
