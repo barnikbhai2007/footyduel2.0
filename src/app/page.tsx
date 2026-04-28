@@ -13,7 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, getRedirectResult } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc, collection, query, where, limit, getCountFromServer, arrayUnion, orderBy, getDocs } from "firebase/firestore";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -161,23 +161,17 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (!auth || typeof window === 'undefined') return;
-    getRedirectResult(auth).then(async (result) => {
-      if (result && result.user) {
-        const loggedUser = result.user;
-        const userRef = doc(db, "userProfiles", loggedUser.uid);
-        const userSnap = await getDoc(userRef);
-        startAssetSync(loggedUser.uid, loggedUser.displayName, loggedUser.photoURL, !userSnap.exists());
-      }
-    }).catch(err => {
-      console.error("Redirect login error:", err);
-    });
   }, [auth, db]);
 
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     setIsActionLoading(true);
     try {
-      await signInWithRedirect(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const loggedUser = result.user;
+      const userRef = doc(db, "userProfiles", loggedUser.uid);
+      const userSnap = await getDoc(userRef);
+      startAssetSync(loggedUser.uid, loggedUser.displayName, loggedUser.photoURL, !userSnap.exists());
     } catch (error: any) {
       console.error("Google login error:", error);
       toast({ variant: "destructive", title: "Login failed", description: "Google authentication error." });
