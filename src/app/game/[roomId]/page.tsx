@@ -702,7 +702,7 @@ export default function GamePage() {
               revealStep === 'flag-out' ? 'opacity-0 scale-110 blur-sm' :
               'opacity-0 scale-90 blur-sm'
             }`}>
-              {targetPlayer && <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[80vw] max-w-[400px] shadow-[0_0_80px_rgba(255,255,255,1)]" alt="flag" />}
+              {targetPlayer && <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[40vw] max-w-[200px] shadow-[0_0_80px_rgba(255,255,255,1)]" alt="flag" />}
             </div>
 
             {/* Position */}
@@ -711,7 +711,7 @@ export default function GamePage() {
               revealStep === 'position-out' ? 'opacity-0 scale-110 blur-sm' :
               'opacity-0 scale-90 blur-sm'
             }`}>
-              {targetPlayer && <span className="text-[140px] md:text-[220px] font-black italic uppercase text-yellow-400 drop-shadow-[0_0_100px_rgba(255,165,0,0.8)] tracking-tighter leading-none">{targetPlayer.position}</span>}
+              {targetPlayer && <span className="text-[80px] md:text-[140px] font-black italic uppercase text-yellow-400 drop-shadow-[0_0_100px_rgba(255,165,0,0.8)] tracking-tighter leading-none">{targetPlayer.position}</span>}
             </div>
 
             {/* Club */}
@@ -722,10 +722,9 @@ export default function GamePage() {
             }`}>
               {targetPlayer && (
                 <>
-                  <div className="w-[40vw] max-w-[180px] aspect-square flex flex-col items-center justify-center overflow-hidden mb-6 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
+                  <div className="w-[30vw] max-w-[140px] aspect-square flex flex-col items-center justify-center overflow-hidden filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
                     <img src={`/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full object-contain" alt="club" />
                   </div>
-                  <span className="text-[32px] md:text-[48px] font-black italic uppercase text-white drop-shadow-[0_0_30px_rgba(0,0,0,0.8)] tracking-tight max-w-[90vw] text-center leading-none">{targetPlayer.club}</span>
                 </>
               )}
             </div>
