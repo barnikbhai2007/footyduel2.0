@@ -220,7 +220,7 @@ export default function LandingPage() {
     }, 100);
   };
 
-  const handleCreateRoom = async () => {
+  const handleCreateRoom = async (mode: string = '1v1') => {
     if (!user) return;
     setIsActionLoading(true);
     try {
@@ -233,7 +233,7 @@ export default function LandingPage() {
         player2Id: null,
         participantIds: [user.uid],
         status: 'Lobby',
-        mode: '1v1',
+        mode: mode,
         healthOption: 100,
         player1CurrentHealth: 100,
         player2CurrentHealth: 100,
@@ -411,11 +411,18 @@ export default function LandingPage() {
             </div>
 
             <div className="grid gap-3">
-              <Button disabled={isActionLoading} onClick={handleCreateRoom} className="w-full h-12 text-sm font-black bg-primary rounded-xl uppercase shadow-lg hover:scale-[1.02] transition-all group">
-                {!isActionLoading && "CREATE ARENA"}
-                {isActionLoading && roomCode === "" ? "CREATING ARENA..." : (isActionLoading ? "PLEASE WAIT..." : "")}
-                {!isActionLoading && <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform" />}
-              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button disabled={isActionLoading} onClick={() => handleCreateRoom('1v1')} className="w-full h-12 text-sm font-black bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 rounded-xl uppercase shadow-lg hover:scale-[1.02] transition-all group">
+                  {!isActionLoading && "CREATE MATCH"}
+                  {isActionLoading && roomCode === "" ? "CREATING..." : (isActionLoading ? "WAIT..." : "")}
+                  {!isActionLoading && <Users className="ml-2 w-4 h-4" />}
+                </Button>
+                <Button disabled={isActionLoading} onClick={() => handleCreateRoom('Solo Leveling')} className="w-full h-12 text-sm font-black bg-primary rounded-xl uppercase shadow-lg hover:scale-[1.02] transition-all group">
+                  {!isActionLoading && "PLAY SOLO"}
+                  {isActionLoading && roomCode === "" ? "STARTING..." : (isActionLoading ? "WAIT..." : "")}
+                  {!isActionLoading && <Zap className="ml-2 w-4 h-4 group-hover:scale-125 transition-transform" />}
+                </Button>
+              </div>
               <div className="flex gap-2">
                 <Input placeholder="CODE" className="h-14 bg-[#161618] text-center font-black tracking-widest text-2xl rounded-xl border-white/10" value={roomCode} onChange={(e) => setRoomCode(e.target.value)} maxLength={6} disabled={isActionLoading} />
                 <Button disabled={isActionLoading || !roomCode} onClick={handleJoinRoom} variant="secondary" className="h-14 px-8 font-black rounded-xl uppercase text-lg shadow-xl">

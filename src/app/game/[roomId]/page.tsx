@@ -37,6 +37,21 @@ export default function GamePage() {
   const { user, isUserLoading } = useUser();
   const db = useFirestore();
   const { playSound } = useSoundEffect();
+
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const videoDesktopRef = useRef<HTMLVideoElement>(null);
+  const videoMobileRef = useRef<HTMLVideoElement>(null);
+
+  const handleInteraction = () => {
+    setHasInteracted(true);
+    playSound('click');
+    if (videoDesktopRef.current) {
+      videoDesktopRef.current.muted = false;
+    }
+    if (videoMobileRef.current) {
+      videoMobileRef.current.muted = false;
+    }
+  };
   
   const revealTriggered = useRef(false);
   const isInitializingRound = useRef(false);
@@ -643,6 +658,20 @@ export default function GamePage() {
 
   if (isUserLoading || isRoomLoading || !room) return <div className="min-h-screen flex items-center justify-center bg-background"><Swords className="w-12 h-12 text-primary animate-spin" /></div>;
 
+  if (!hasInteracted) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-[#0a0a0b] flex flex-col items-center justify-center space-y-6 p-6">
+         <div className="relative">
+           <Swords className="w-24 h-24 text-primary animate-bounce drop-shadow-[0_0_30px_rgba(249,115,22,0.8)]" />
+           <div className="absolute inset-0 animate-ping opacity-50 rounded-full border border-primary/50"></div>
+         </div>
+         <h1 className="text-5xl md:text-6xl font-black text-white uppercase italic text-center tracking-tighter drop-shadow-2xl">ARENA READY</h1>
+         <p className="text-sm font-black text-primary uppercase tracking-[0.3em]">TAP TO INITIALIZE AUDIO & ENTER</p>
+         <Button onClick={handleInteraction} className="mt-8 h-16 w-full max-w-sm text-2xl font-black rounded-2xl bg-primary text-black hover:bg-primary/90 shadow-[0_0_40px_rgba(249,115,22,0.4)] hover:shadow-[0_0_60px_rgba(249,115,22,0.6)] transition-all">ENTER MATCH</Button>
+      </div>
+    );
+  }
+
   const myGuess = roundData?.guesses?.[user?.uid || ""] || null;
   const iHaveGuessed = !!myGuess;
   const participantIds = room.participantIds || [];
@@ -657,8 +686,8 @@ export default function GamePage() {
     return (
       <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col items-center justify-center overflow-hidden font-sans">
         {/* Dynamic Backgrounds */}
-        <video className="absolute inset-0 w-full h-full object-cover opacity-70 hidden md:block" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
-        <video className="absolute inset-0 w-full h-full object-cover opacity-70 md:hidden" playsInline autoPlay muted src="https://res.cloudinary.com/speed-searches/video/upload/v1777384026/Untitled_Youtube_Shorts_uttq1h.mp4" />
+        <video ref={videoDesktopRef} className="absolute inset-0 w-full h-full object-cover opacity-70 hidden md:block" playsInline autoPlay src="https://res.cloudinary.com/speed-searches/video/upload/v1777384239/Untitled_design_2_a65v9l.mp4" />
+        <video ref={videoMobileRef} className="absolute inset-0 w-full h-full object-cover opacity-70 md:hidden" playsInline autoPlay src="https://res.cloudinary.com/speed-searches/video/upload/v1777384026/Untitled_Youtube_Shorts_uttq1h.mp4" />
         
         <div className="relative z-20 flex flex-col items-center justify-center w-full h-full p-6 text-center">
           
@@ -693,8 +722,8 @@ export default function GamePage() {
             }`}>
               {targetPlayer && (
                 <>
-                  <div className="w-[40vw] max-w-[180px] aspect-square rounded-full border-[6px] border-black/50 bg-white/10 shadow-[0_0_80px_rgba(255,255,255,0.4)] flex flex-col items-center justify-center overflow-hidden mb-6 p-1 backdrop-blur-sm">
-                    <img src={`https://ais-dev-2elloypbdcgwcfgcgrd3zo-696922081471.asia-southeast1.run.app/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full rounded-full object-contain filter drop-shadow-lg" alt="club" />
+                  <div className="w-[40vw] max-w-[180px] aspect-square flex flex-col items-center justify-center overflow-hidden mb-6 filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
+                    <img src={`/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full object-contain" alt="club" />
                   </div>
                   <span className="text-[32px] md:text-[48px] font-black italic uppercase text-white drop-shadow-[0_0_30px_rgba(0,0,0,0.8)] tracking-tight max-w-[90vw] text-center leading-none">{targetPlayer.club}</span>
                 </>
@@ -714,8 +743,8 @@ export default function GamePage() {
                   <div className="flex justify-between items-end mb-4">
                     <div className="flex flex-col gap-3">
                       <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[48px] md:w-[56px] shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/20" alt="flag" />
-                      <div className="w-[48px] h-[48px] md:w-[56px] md:h-[56px] rounded-full border border-white/20 bg-black/60 overflow-hidden flex items-center justify-center p-[2px] shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-                        <img src={`https://ais-dev-2elloypbdcgwcfgcgrd3zo-696922081471.asia-southeast1.run.app/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full rounded-full object-contain filter drop-shadow-md" alt="club" />
+                      <div className="w-[48px] h-[48px] md:w-[56px] md:h-[56px] overflow-hidden flex items-center justify-center">
+                        <img src={`/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full object-contain filter drop-shadow-md" alt="club" />
                       </div>
                     </div>
                     <span className="text-[70px] md:text-[90px] font-black italic text-yellow-400 drop-shadow-[0_0_50px_rgba(0,0,0,0.8)] leading-[0.8] tracking-tighter">{targetPlayer.position}</span>
@@ -923,7 +952,7 @@ export default function GamePage() {
               {targetPlayer && (
                 <div className="flex gap-4 items-center">
                   <img src={getFlagUrl(targetPlayer.countryCode)} className="w-16 h-10 shadow-[0_0_15px_rgba(255,255,255,0.2)] border border-white/20 rounded-md object-cover" alt="flag" />
-                  <img src={`https://ais-dev-2elloypbdcgwcfgcgrd3zo-696922081471.asia-southeast1.run.app/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-12 h-12 rounded-full object-contain drop-shadow-md bg-white p-1" alt="club" />
+                  <img src={`/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-12 h-12 object-contain drop-shadow-md" alt="club" />
                 </div>
               )}
             </div>

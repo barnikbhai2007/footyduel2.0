@@ -423,7 +423,7 @@ export default function LobbyPage() {
         </Card>
 
         {isLeader ? (
-          <Button onClick={startGame} disabled={participants.length < 2} className="w-full h-16 text-xl font-black bg-primary hover:bg-primary/90 shadow-2xl rounded-2xl uppercase group">
+          <Button onClick={startGame} disabled={room.mode !== 'Solo Leveling' && participants.length < 2} className="w-full h-16 text-xl font-black bg-primary hover:bg-primary/90 shadow-2xl rounded-2xl uppercase group">
             <Play className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" /> START MATCH
           </Button>
         ) : (

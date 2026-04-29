@@ -22,9 +22,7 @@ export function AudioController() {
     let src = MAIN_BGM;
     
     // Silence during game, play on result
-    if (isGameRoute) {
-      src = ""; 
-    } else if (pathname?.startsWith('/result/')) {
+    if (pathname?.startsWith('/result/')) {
       src = RESULT_BGM;
     }
     
@@ -61,9 +59,6 @@ export function AudioController() {
     }
   };
 
-  // Hide the toggle button if we are in a game session
-  if (isGameRoute) return null;
-
   return (
     <>
       <audio
@@ -72,15 +67,17 @@ export function AudioController() {
         loop
         autoPlay={false}
       />
-      <div className="fixed bottom-6 right-6 z-[100]">
-        <Button
-          onClick={toggleAudio}
-          size="icon"
-          className={`h-12 w-12 rounded-full shadow-2xl transition-all hover:scale-110 ${isMuted || !isPlaying ? 'bg-slate-800 text-slate-400' : 'bg-primary text-black'}`}
-        >
-          {isMuted || !isPlaying ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-        </Button>
-      </div>
+      {!isGameRoute && (
+        <div className="fixed bottom-6 right-6 z-[100]">
+          <Button
+            onClick={toggleAudio}
+            size="icon"
+            className={`h-12 w-12 rounded-full shadow-2xl transition-all hover:scale-110 ${isMuted || !isPlaying ? 'bg-slate-800 text-slate-400' : 'bg-primary text-black'}`}
+          >
+            {isMuted || !isPlaying ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+          </Button>
+        </div>
+      )}
     </>
   );
 }
