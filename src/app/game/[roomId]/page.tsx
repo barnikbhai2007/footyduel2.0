@@ -579,27 +579,35 @@ export default function GamePage() {
           updates.status = 'Completed';
           updates.finishedAt = new Date().toISOString();
           const winnerId = p1Health > 0 ? p1 : (p2Health > 0 ? p2 : null);
-          updates.winnerId = winnerId;
+          updates.winnerId = winnerId ?? null;
           updates.endReason = 'HP_DEPLETED';
           
-          const h2hId = [p1, p2].sort().join('_');
-          const h2hRef = doc(db, "battleHistories", h2hId);
-          const h2hSnap = await transaction.get(h2hRef);
-          
-          if (!h2hSnap.exists()) {
-            transaction.set(h2hRef, {
-              id: h2hId,
-              player1Id: p1,
-              player2Id: p2,
-              [p1 === winnerId ? 'player1Wins' : 'player2Wins']: 1,
-              [p1 !== winnerId ? 'player1Wins' : 'player2Wins']: 0,
-              totalMatches: 1
-            });
-          } else {
-            transaction.update(h2hRef, {
-              [uid === winnerId ? (uid === p1 ? 'player1Wins' : 'player2Wins') : '']: increment(1),
-              totalMatches: increment(1)
-            });
+          const validPlayers = [p1, p2].filter(Boolean);
+          if (validPlayers.length === 2) {
+            const h2hId = validPlayers.sort().join('_');
+            const h2hRef = doc(db, "battleHistories", h2hId);
+            const h2hSnap = await transaction.get(h2hRef);
+            
+            const p1WinsField = p1 === winnerId ? 'player1Wins' : 'player2Wins';
+            const winnerField = winnerId ? p1WinsField : null; // null if draw
+
+            if (!h2hSnap.exists()) {
+              transaction.set(h2hRef, {
+                id: h2hId,
+                player1Id: p1,
+                player2Id: p2,
+                player1Wins: p1 === winnerId ? 1 : 0,
+                player2Wins: p2 === winnerId ? 1 : 0,
+                totalMatches: 1
+              });
+            } else {
+              const updatesToApply: any = {
+                totalMatches: increment(1)
+              };
+              if (winnerField) updatesToApply[winnerField] = increment(1);
+              
+              transaction.update(h2hRef, updatesToApply);
+            }
           }
 
           for (const uid of rmData.participantIds) {
@@ -646,7 +654,7 @@ export default function GamePage() {
     await updateDoc(roomRef, { 
       status: 'Completed', 
       finishedAt: new Date().toISOString(), 
-      winnerId: room.participantIds.find(id => id !== user.uid), 
+      winnerId: room.participantIds?.find(id => id !== user.uid) ?? null, 
       endReason: 'FORFEIT' 
     });
   };
@@ -702,7 +710,7 @@ export default function GamePage() {
               revealStep === 'flag-out' ? 'opacity-0 scale-110 blur-sm' :
               'opacity-0 scale-90 blur-sm'
             }`}>
-              {targetPlayer && <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[40vw] max-w-[200px] shadow-[0_0_80px_rgba(255,255,255,1)]" alt="flag" />}
+              {targetPlayer && <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[30vw] max-w-[120px] shadow-[0_0_80px_rgba(255,255,255,1)]" alt="flag" />}
             </div>
 
             {/* Position */}
@@ -711,7 +719,7 @@ export default function GamePage() {
               revealStep === 'position-out' ? 'opacity-0 scale-110 blur-sm' :
               'opacity-0 scale-90 blur-sm'
             }`}>
-              {targetPlayer && <span className="text-[80px] md:text-[140px] font-black italic uppercase text-yellow-400 drop-shadow-[0_0_100px_rgba(255,165,0,0.8)] tracking-tighter leading-none">{targetPlayer.position}</span>}
+              {targetPlayer && <span className="text-[40px] md:text-[60px] font-black italic uppercase text-yellow-400 drop-shadow-[0_0_100px_rgba(255,165,0,0.8)] tracking-tighter leading-none">{targetPlayer.position}</span>}
             </div>
 
             {/* Club */}
@@ -722,7 +730,7 @@ export default function GamePage() {
             }`}>
               {targetPlayer && (
                 <>
-                  <div className="w-[30vw] max-w-[140px] aspect-square flex flex-col items-center justify-center overflow-hidden filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
+                  <div className="w-[20vw] max-w-[100px] aspect-square flex flex-col items-center justify-center overflow-hidden filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
                     <img src={`/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full object-contain" alt="club" />
                   </div>
                 </>
@@ -741,12 +749,12 @@ export default function GamePage() {
                   
                   <div className="flex justify-between items-end mb-4">
                     <div className="flex flex-col gap-3">
-                      <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[48px] md:w-[56px] shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/20" alt="flag" />
-                      <div className="w-[48px] h-[48px] md:w-[56px] md:h-[56px] overflow-hidden flex items-center justify-center">
+                      <img src={getFlagUrl(targetPlayer.countryCode)} className="w-[32px] md:w-[40px] shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/20" alt="flag" />
+                      <div className="w-[32px] h-[32px] md:w-[40px] md:h-[40px] overflow-hidden flex items-center justify-center">
                         <img src={`/api/clubs?name=${encodeURIComponent(targetPlayer.club)}`} className="w-full h-full object-contain filter drop-shadow-md" alt="club" />
                       </div>
                     </div>
-                    <span className="text-[70px] md:text-[90px] font-black italic text-yellow-400 drop-shadow-[0_0_50px_rgba(0,0,0,0.8)] leading-[0.8] tracking-tighter">{targetPlayer.position}</span>
+                    <span className="text-[40px] md:text-[50px] font-black italic text-yellow-400 drop-shadow-[0_0_50px_rgba(0,0,0,0.8)] leading-[0.8] tracking-tighter">{targetPlayer.position}</span>
                   </div>
 
                   <div className="bg-gradient-to-r from-transparent via-black/80 to-transparent py-3 border-y border-white/20 flex justify-center text-center w-[120%] -ml-[10%]">
