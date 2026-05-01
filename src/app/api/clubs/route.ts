@@ -9,28 +9,22 @@ export async function GET(request: Request) {
 
   // Handle Icons & Retired
   if (lowerName === 'icons' || lowerName === 'icon' || lowerName.includes('icon') || lowerName === 'retired' || lowerName === 'free agent' || lowerName === 'deceased') {
-    try {
-      const imgRes = await fetch('https://fifaprizee.com/assets/cards/download_22/team_logos_256x256_L112658.png', {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-          'Referer': 'https://fifaprizee.com/'
-        }
-      });
-      if (imgRes.ok) {
-        const buffer = await imgRes.arrayBuffer();
-        const contentType = imgRes.headers.get('content-type') || 'image/png';
-        return new NextResponse(buffer, {
-          headers: { 
-            'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=86400' 
-          }
-        });
+    const isRetired = lowerName === 'retired' || lowerName === 'free agent';
+    const text = isRetired ? 'RETIRED' : 'ICON';
+    const bg = isRetired ? '#1a1a1a' : '#d4af37';
+    const fg = isRetired ? '#ffffff' : '#000000';
+    
+    const svgIcon = `<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+      <rect width="256" height="256" rx="32" fill="${bg}"/>
+      <text x="128" y="140" font-family="Arial, sans-serif" font-weight="bold" font-style="italic" font-size="48" fill="${fg}" text-anchor="middle" alignment-baseline="middle">${text}</text>
+    </svg>`;
+    
+    return new NextResponse(svgIcon, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=86400'
       }
-    } catch (e) {
-      console.error("Failed to fetch icons logo", e);
-    }
-    // Fallback
-    return NextResponse.redirect('https://fifaprizee.com/assets/cards/download_22/team_logos_256x256_L112658.png');
+    });
   }
 
   try {

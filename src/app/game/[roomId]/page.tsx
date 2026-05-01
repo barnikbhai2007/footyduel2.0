@@ -491,7 +491,7 @@ export default function GamePage() {
   };
 
   const calculateRoundResults = async () => {
-    if (!roundData || !targetPlayer || !room || !roomRef || !roundRef) return;
+    if (!roomRef || !roundRef) return;
 
     await runTransaction(db, async (transaction) => {
       const freshRoundSnap = await transaction.get(roundRef);
